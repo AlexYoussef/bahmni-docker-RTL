@@ -44,7 +44,7 @@ RUN mkdir -p /var/log/client-side-logs/ &&\
 	chmod 777 /var/log/client-side-logs/client-side.log &&\
 	ln -s /usr/local/apache2/htdocs/client_side_logging /usr/lib/python3*/site-packages/ 
 
-RUN pip install Flask pyyaml==6.0.1 mod_wsgi --break-system-packages
+RUN pip install Flask pyyaml==5.4.1 mod_wsgi
 
 # Rename and move mod_wsgi module to apache2 modules
 RUN mv /usr/lib/python*/site-packages/mod_wsgi/server/mod_wsgi-*.so /usr/local/apache2/modules/mod_wsgi.so
