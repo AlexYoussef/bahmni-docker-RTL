@@ -1,30 +1,33 @@
+
 ````markdown
 # 📘 Bahmni Docker RTL – Installation & Database Restoration Guide
 
-This guide describes the complete step-by-step procedure to install **Bahmni (RTL version)** using **Docker** on **Ubuntu**, verify services, and perform required **post-installation database fixes** for OpenMRS, OpenELIS, Odoo, Patient Documents, and Bed Management.
+This guide describes the step-by-step procedure to install **Bahmni (RTL version)** using **Docker** on **Ubuntu**, verify services, and perform required **post-installation database fixes** for **OpenMRS, OpenELIS, and Odoo**.
 
 ---
 
-# 📋 1. Prerequisites
+## 📋 1. Prerequisites
 
-## 1.1 Operating System
-- Ubuntu LTS (Recommended 20.04 / 22.04)
+Ensure the following are available on the server.
+
+### 1.1 Operating System
+- Ubuntu LTS
 
 Verify:
 ```bash
 cat /etc/os-release
-```
+````
 
-## 1.2 Required Packages
-- Docker Engine
-- Docker Compose (plugin + standalone)
-- Git
+### 1.2 Docker & Docker Compose
+
+* Docker Engine
+* Docker Compose (plugin + standalone)
 
 ---
 
-# 🐳 2. Docker Installation (Ubuntu)
+## 🐳 2. Docker & Docker Compose Installation (Ubuntu)
 
-## 2.1 Install Docker Engine
+### 2.1 Install Docker Engine
 
 ```bash
 sudo apt-get update
@@ -61,7 +64,7 @@ docker-buildx-plugin docker-compose-plugin
 
 ---
 
-## 2.2 Install Docker Compose (Standalone)
+### 2.2 Install Docker Compose (Standalone)
 
 ```bash
 sudo curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 \
@@ -71,7 +74,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 ```
 
-Verify:
+Verify installation:
 
 ```bash
 docker version
@@ -80,7 +83,7 @@ docker compose version
 
 ---
 
-# 🔧 3. Install Git
+## 🔧 3. Git Installation (If Required)
 
 ```bash
 sudo apt update
@@ -90,16 +93,16 @@ git --version
 
 ---
 
-# 📁 4. Bahmni Docker Setup
+## 📁 4. Bahmni Docker Setup
 
-## 4.1 Create Base Directory
+### 4.1 Create Base Directory
 
 ```bash
 mkdir -p /App
 cd /App
 ```
 
-## 4.2 Clone Bahmni Docker RTL Repository
+### 4.2 Clone Bahmni Docker RTL Repository
 
 ```bash
 git clone https://github.com/RAEng-FoD-Bahmni-project/bahmni-docker-RTL.git
@@ -115,7 +118,7 @@ chown -R root:root /App/bahmni-docker-RTL/
 
 ---
 
-# 📦 5. Clone & Configure Odoo Modules
+## 📦 5. Clone & Configure Odoo Modules
 
 ```bash
 mkdir -p /opt/bahmni-erp/
@@ -138,38 +141,54 @@ chown -R root:root /opt/bahmni-erp/bahmni-addons
 
 ---
 
-# ▶️ 6. Start Bahmni Services
+## ▶️ 6. Start Bahmni Services
 
 ```bash
 cd /App/bahmni-docker-RTL/
 docker compose up -d
 ```
 
-If containers fail during first run:
+Docker will start pulling the required images.
+
+### 🔄 Troubleshooting During Initial Startup
+
+If certain containers fail during the first run, restart them manually:
 
 ```bash
 docker compose restart <container-name>
+```
+
+Example:
+
+```bash
+docker compose restart odoodb
+```
+
+Repeat until all services are running, then run again:
+
+```bash
 docker compose up -d
 ```
 
 ---
 
-# ⏳ 7. Mandatory Wait Time (Before Database Fixes)
+## ⏳ 6.1 Mandatory Wait Time (Before Database Fixes)
 
-⚠️ IMPORTANT
+⚠️ **Important**
 
-After all containers are running, wait **at least 30 minutes**.
+After all containers are up and running, **wait at least 30 minutes** before proceeding.
 
-This allows:
-- Database initialization
-- Inter-service communication
-- Full startup of OpenMRS, Odoo, OpenELIS, DCM4CHEE
+This is required for:
 
-❗ Do NOT skip this step.
+* Database initialization
+* Inter-service synchronization
+* Proper startup of OpenMRS, Odoo, OpenELIS, and DCM4CHEE
+
+❗ **Do NOT skip this step**
 
 ---
 
-# 🎨 8. Fix: Odoo CSS Missing Issue
+## 🎨 7. Fix: Odoo CSS Missing Issue
 
 **Cause:** Invalid attachments after database restoration.
 
@@ -197,57 +216,46 @@ Restart Odoo:
 docker compose restart odoo
 ```
 
----
-
-# 📂 9. Fix: Patient Documents Error (If Occurs Later)
+##  📂 Fix: Patient Documents Error (If Occurs Later)
 
 ⚠️ Apply only if patient document upload/view errors occur.
 
-### Step 1: Access Container
-
 ```bash
 docker compose exec -it patient-documents sh
+
 ```
 
 Install ACL:
 
 ```bash
-apk add acl
-```
-
-### Step 2: Fix Permissions
-
-```bash
 setfacl -dRm o::rwx /usr/share/nginx/html/document_images/
 chmod -R 777 /usr/share/nginx/html/document_images/
-```
-
-Verify:
-
-```bash
 ls -al /usr/share/nginx/html/document_images/
 ```
 
-### Step 3: Restart Service
+
+
+```bash
+\q
+exit
+```
+
+Restart patient-documents:
 
 ```bash
 docker compose restart patient-documents
 ```
 
----
-
-# 🛏 10. Fix: Bed Management Issue
+## 🛏 Fix: Bed Management Issue (Mandatory)
 
 ⚠️ Apply only if Bed Management errors occur.
-
-### Step 1: Access OpenMRS DB
 
 ```bash
 docker compose exec -it openmrsdb sh
 mysql -uroot -padminAdmin!123 openmrs
 ```
 
-### Step 2: Update Table
+Run:
 
 ```sql
 ALTER TABLE bed_location_map 
@@ -264,10 +272,11 @@ SET row_number = bed_row_number,
 Exit:
 
 ```bash
+\q
 exit
 ```
 
-Restart OpenMRS:
+Restart Openmrs:
 
 ```bash
 docker compose restart openmrs
@@ -275,7 +284,7 @@ docker compose restart openmrs
 
 ---
 
-# 🔁 11. Fix: OpenMRS Sync Issue (Markers Table)
+## 🔁 8. Fix: OpenMRS Sync Issue (Markers Table)
 
 ```bash
 docker compose exec -it openmrsdb sh
@@ -296,7 +305,7 @@ exit
 
 ---
 
-# 🔄 12. Restart All Bahmni Services
+## 🔄 9. Restart All Bahmni Services
 
 ```bash
 docker compose down
@@ -306,56 +315,56 @@ docker compose up -d
 
 ---
 
-# ⏳ 13. Mandatory Wait Time (After Restart)
+## ⏳ 10. Mandatory Wait Time (After Restart)
 
-Wait another **30 minutes**.
+⚠️ **Important**
 
-Keep refreshing the UI until all services are stable.
+After restarting all services, wait another **30 minutes** to ensure all containers are fully initialized.
+
+Keep refreshing the UI during this time.
 
 ---
 
-# 🧪 14. Post-Restoration Steps
+## 🧪 11. Post-Restoration Steps
 
-1. Access OpenMRS  
+1. Access OpenMRS:
+
    ```
    https://<server-ip>/openmrs
    ```
+2. Rebuild Search Index:
 
-2. Rebuild Search Index  
-   - OpenMRS → Admin  
-   - Search Index  
-   - Click **Rebuild Search Index**
-
----
-
-# ⚠️ Important Notes
-
-- Sections 8, 10, and 11 are required only once after:
-  - First image pull
-  - Database restoration
-- Patient document and bed management fixes are only required if those specific errors occur.
-- Do NOT repeat cleanup steps on every restart.
+   * OpenMRS UI → **Admin**
+   * **Search Index**
+   * Click **Rebuild Search Index**
 
 ---
 
-# ✅ Completion & Verification
+## ⚠️ Important Note
+
+The database cleanup steps in **Sections 7 and 8** are required **only once** after:
+
+* First image pull
+* Database restoration
+
+They do **NOT** need to be repeated on subsequent restarts.
+
+---
+
+## ✅ Completion & Verification
 
 Bahmni should now be fully functional.
 
-## 🔍 Application Access Details
+### 🔍 Application Access Details
 
-| Application | URL | Credentials |
-|------------|-----|------------|
-| Bahmni App | https://localhost/ | — |
-| OpenMRS | https://localhost/openmrs | superman / Admin123 |
-| Odoo ERP | http://localhost:8069 | admin / admin |
-| DCM4CHEE | https://localhost/dcm4chee-web3/ | admin / admin |
-| OpenELIS | https://localhost/openelis/LoginPage.do | admin / adminADMIN! |
+| Application | URL                                                                                | Credentials         |
+| ----------- | ---------------------------------------------------------------------------------- | ------------------- |
+| Bahmni App  | [https://localhost/](https://localhost/)                                           | —                   |
+| OpenMRS     | [https://localhost/openmrs](https://localhost/openmrs)                             | superman / Admin123 |
+| Odoo ERP    | [http://localhost:8069](http://localhost:8069)                                     | admin / admin       |
+| DCM4CHEE    | [https://localhost/dcm4chee-web3/](https://localhost/dcm4chee-web3/)               | admin / admin       |
+| OpenELIS    | [https://localhost/openelis/LoginPage.do](https://localhost/openelis/LoginPage.do) | admin / adminADMIN! |
 
 ---
 
-# 🎉 Installation Complete
-
-Your Bahmni RTL Docker environment is now ready.
-````
 
